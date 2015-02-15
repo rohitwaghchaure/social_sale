@@ -1,12 +1,9 @@
 from flask import  redirect, Flask, render_template, url_for, request
-from flask_oauth import OAuth
-from string import Template
 import json
 from flask import session
 from rauth.service import OAuth2Service
-from flask_sqlalchemy import SQLAlchemy
+
 import database
-oauth = OAuth()
 app = Flask(__name__)
 
 database_args = {'host':'localhost', 'user': 'social_sale', 'password':'social_sale', 'database':'social_sale'}
