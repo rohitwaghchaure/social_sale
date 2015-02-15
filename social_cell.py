@@ -9,21 +9,28 @@ import database
 oauth = OAuth()
 app = Flask(__name__)
 
-database_args = {'host':'localhost', 'user': 'social_cell', 'password':'social_cell', 'database':'social_cell'}
+database_args = {'host':'localhost', 'user': 'social_sale', 'password':'social_sale', 'database':'social_sale'}
 db = database.Database(database_args)
 
-try:
-	if db:
-		client_id = db.sql(""" select defvalue from `tabConfiguration Details` where 
-			defattr ='fb_client_id'""")
-		if client_id:
-			FB_CLIENT_ID =  client_id[0][0]
+def get_facebook_credentials():
+	FB_CLIENT_ID , FB_CLIENT_SECRET = '', ''
+	try:
+		if db:
+			client_id = db.sql(""" select defvalue from `tabConfiguration Details` where 
+				defattr ='fb_client_id'""")
+			if client_id:
+				FB_CLIENT_ID =  client_id[0][0]
 
-		client_secret = db.sql(""" select defvalue from `tabConfiguration Details` where 
-			defattr ='fb_client_secret'""")
-		if client_secret:
-			FB_CLIENT_SECRET =  client_secret[0][0]
+			client_secret = db.sql(""" select defvalue from `tabConfiguration Details` where 
+				defattr ='fb_client_secret'""")
+			if client_secret:
+				FB_CLIENT_SECRET =  client_secret[0][0]
+		return FB_CLIENT_ID, FB_CLIENT_SECRET
+	except Exception,e:
+		return e
 
+def get_facebook_obj():
+	FB_CLIENT_ID, FB_CLIENT_SECRET = get_facebook_credentials()
 	if FB_CLIENT_SECRET and FB_CLIENT_ID:
 		graph_url = 'https://graph.facebook.com/'
 		facebook = OAuth2Service(name='facebook',
@@ -32,12 +39,12 @@ try:
 		                         client_id=FB_CLIENT_ID,
 		                         client_secret=FB_CLIENT_SECRET,
 		                         base_url=graph_url)
-except Exception, e:
-	print e
+		return facebook
 
 @app.route('/')
 def webprint():
 	app.secret_key = 'why would I tell you my secret key?'
+	FB_CLIENT_ID, FB_CLIENT_SECRET = get_facebook_credentials()
 	if FB_CLIENT_ID and FB_CLIENT_SECRET:
 		return render_template('login.html')
 	else:
@@ -56,6 +63,7 @@ def oauth_credentials():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+	facebook = get_facebook_obj()
 	try:
 		redirect_uri = url_for('authorized', _external=True)
 		params = {'redirect_uri': redirect_uri}
@@ -65,6 +73,7 @@ def login():
 
 @app.route('/authorized')
 def authorized():
+	facebook = get_facebook_obj()
 	try:
 		redirect_uri = url_for('authorized', _external=True)
 		data = dict(code=request.args['code'], redirect_uri=redirect_uri)
